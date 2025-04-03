@@ -1,14 +1,9 @@
 <?php
-// Database configuration for online hosting
-$host = "localhost:3306"; // Use localhost:3306 if this doesn't work
-$username = "swissto_root"; // From your phpMyAdmin screenshot
-$password = "CeeJay001$"; // Replace with your actual database password
-$database = "swissto_app"; // From your phpMyAdmin screenshot
+// Database configuration for PostgreSQL
+$dsn = "pgsql:host=dpg-cvn925a4d50c73fv6m70-a;port=5432;dbname=admin_db_5jq5;user=admin_db_5jq5_user;password=zQ7Zey6xTtDtqT99fKgUepfsuEhCjIoZ";
 
-// Establish database connection using PDO instead of mysqli
 try {
-    $conn = new PDO("mysql:host=$host;dbname=$database", $username, $password);
-    // Set the PDO error mode to exception
+    $conn = new PDO($dsn);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch(PDOException $e) {
     die("Connection failed: " . $e->getMessage());
@@ -79,7 +74,7 @@ if (isset($_POST['submit'])) {
         // Current timestamp for creation date
         $created_at = date("Y-m-d H:i:s");
         
-        // SQL query to insert tracking data using PDO prepared statement
+        // SQL query to insert tracking data using PDO prepared statement for PostgreSQL
         $stmt = $conn->prepare("INSERT INTO tracking_orders (
             tracking_number, 
             sender_name, 
