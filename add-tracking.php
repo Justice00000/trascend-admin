@@ -1,6 +1,147 @@
+<?php
+// Database configuration for online hosting
+$host = "localhost"; // Use localhost:3306 if this doesn't work
+$username = "swissto_root"; // From your phpMyAdmin screenshot
+$password = "CeeJay001$"; // Replace with your actual database password
+$database = "swissto_app"; // From your phpMyAdmin screenshot
 
+// Establish database connection
+$conn = new mysqli($host, $username, $password, $database);
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+// Initialize tracking number with month and random number
+$tracking_number = "CC-" . date("m") . "-" . rand(100000, 999999);
+
+// Process form submission
+if (isset($_POST['submit'])) {
+    // Sender information
+    $sname = $conn->real_escape_string($_POST['sname']);
+    $scontact = $conn->real_escape_string($_POST['scontact']);
+    $smail = $conn->real_escape_string($_POST['smail']);
+    $saddress = $conn->real_escape_string($_POST['saddress']);
     
+    // Receiver information
+    $rname = $conn->real_escape_string($_POST['rname']);
+    $rcontact = $conn->real_escape_string($_POST['rcontact']);
+    $rmail = $conn->real_escape_string($_POST['rmail']);
+    $raddress = $conn->real_escape_string($_POST['raddress']);
     
+    // Shipment information
+    $status = $conn->real_escape_string($_POST['status']);
+    $dispatchl = $conn->real_escape_string($_POST['dispatchl']);
+    $carrier = $conn->real_escape_string($_POST['carrier']);
+    $carrier_ref = $conn->real_escape_string($_POST['carrier_ref']);
+    $weight = $conn->real_escape_string($_POST['weight']);
+    $payment_mode = $conn->real_escape_string($_POST['payment_mode']);
+    $dest = $conn->real_escape_string($_POST['dest']);
+    $desc = $conn->real_escape_string($_POST['desc']);
+    $dispatch_date = $conn->real_escape_string($_POST['dispatch']);
+    $delivery_date = $conn->real_escape_string($_POST['delivery']);
+    $ship_mode = $conn->real_escape_string($_POST['ship_mode']);
+    $quantity = $conn->real_escape_string($_POST['quantity']);
+    $delivery_time = $conn->real_escape_string($_POST['delivery_time']);
+    
+    // Handle file upload
+    $image_path = "";
+    if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
+        $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
+        $file_type = $_FILES['image']['type'];
+        
+        if (in_array($file_type, $allowed_types)) {
+            $upload_dir = "uploads/";
+            
+            // Create directory if it doesn't exist
+            if (!file_exists($upload_dir)) {
+                mkdir($upload_dir, 0777, true);
+            }
+            
+            // Generate unique filename
+            $filename = $tracking_number . "_" . basename($_FILES['image']['name']);
+            $target_file = $upload_dir . $filename;
+            
+            // Move the uploaded file
+            if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
+                $image_path = $target_file;
+            } else {
+                $upload_error = "Error uploading file.";
+            }
+        } else {
+            $upload_error = "Invalid file type. Only JPG, PNG, and GIF are allowed.";
+        }
+    }
+    
+    // Current timestamp for creation date
+    $created_at = date("Y-m-d H:i:s");
+    
+    // SQL query to insert tracking data - make sure to use the correct table name (tracking_orders)
+    $sql = "INSERT INTO tracking_orders (
+        tracking_number, 
+        sender_name, 
+        sender_contact, 
+        sender_email, 
+        sender_address, 
+        receiver_name, 
+        receiver_contact, 
+        receiver_email, 
+        receiver_address, 
+        status, 
+        dispatch_location, 
+        carrier, 
+        carrier_ref_no, 
+        weight, 
+        payment_mode, 
+        destination, 
+        package_desc, 
+        dispatch_date, 
+        delivery_date, 
+        shipment_mode, 
+        quantity, 
+        delivery_time, 
+        package_image, 
+        created_at
+    ) VALUES (
+        '$tracking_number', 
+        '$sname', 
+        '$scontact', 
+        '$smail', 
+        '$saddress', 
+        '$rname', 
+        '$rcontact', 
+        '$rmail', 
+        '$raddress', 
+        '$status', 
+        '$dispatchl', 
+        '$carrier', 
+        '$carrier_ref', 
+        '$weight', 
+        '$payment_mode', 
+        '$dest', 
+        '$desc', 
+        '$dispatch_date', 
+        '$delivery_date', 
+        '$ship_mode', 
+        '$quantity', 
+        '$delivery_time', 
+        '$image_path', 
+        '$created_at'
+    )";
+    
+    // Execute query
+    if ($conn->query($sql) === TRUE) {
+        // Set success message
+        $success_message = "Tracking added successfully with tracking number: " . $tracking_number;
+        
+        // Generate new tracking number for next entry
+        $tracking_number = "CC-" . date("m") . "-" . rand(100000, 999999);
+    } else {
+        $error_message = "Error: " . $conn->error;
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -29,13 +170,13 @@
                                          
             </ul>
             <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-center">
-  <a class="navbar-brand brand-logo" href="dashboard.php">
-    <img src="images/logo.png" alt="logo" class="enhanced-logo"/>
-  </a>
-  <a class="navbar-brand brand-logo-mini" href="dashboard.php">
-    <img src="images/logo.png" alt="logo" class="enhanced-logo-mini"/>
-  </a>
-</div>
+              <a class="navbar-brand brand-logo" href="dashboard.php">
+                <img src="images/logo.png" alt="logo" class="enhanced-logo"/>
+              </a>
+              <a class="navbar-brand brand-logo-mini" href="dashboard.php">
+                <img src="images/logo.png" alt="logo" class="enhanced-logo-mini"/>
+              </a>
+            </div>
             <ul class="navbar-nav navbar-nav-right">
                 
                 
@@ -100,12 +241,8 @@
                     <span class="menu-title">Logout</span>
                     <i class="menu-arrow"></i>
                   </a>
-
               </li>
-              
-              
-              
-                          </ul>
+            </ul>
         </div>
       </nav>
     </div>
@@ -114,150 +251,168 @@
 			<div class="main-panel">
 				<div class="content-wrapper">
 
+                <?php if(isset($success_message)): ?>
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <?php echo $success_message; ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <?php endif; ?>
 
-<div class="row">
-	<div class="col-12 grid-margin stretch-card">
-		<div class="card">
-			<div class="card-body">
-				<label style="font-weight: bold;font-size: 25px;">TRACKING NUMBER</label>
-				<input type="text" readonly="" value="CC-03-495208" name="tracking_number" class="form-control" id="exampleInputUsername1" placeholder="Username">
-			</div>
-		</div>
-    </div>
-    <div class="col-md-6 grid-margin stretch-card">
-      <div class="card">
-        <div class="card-body">
-          <h4 class="card-title">Sender's Info</h4>
-          <p class="card-description">
-            
-          </p>
-          <form method="post" action="add-tracking.php" enctype="multipart/form-data" class="forms-sample">
-            <div class="form-group">
-              <label for="exampleInputUsername1">Sender's Name</label>
-              <input type="text" class="form-control" name="sname" value="" id="exampleInputUsername1" placeholder="Sender's Name">
-            </div>
-            <div class="form-group">
-              <label for="exampleInputEmail1">Sender's Contact</label>
-              <input type="number" class="form-control" value="" name="scontact" id="exampleInputEmail1" placeholder="Sender's Contact">
-            </div>
-            <div class="form-group">
-              <label for="exampleInputPassword1">Sender's Email</label>
-              <input type="text" class="form-control" name="smail" value="" id="exampleInputPassword1" placeholder="Sender's Email">
-            </div>
-            <div class="form-group">
-              <label for="exampleInputConfirmPassword1">Sender's Address</label>
-              <textarea class="form-control" placeholder="Sender's Address" name="saddress"></textarea>
-            </div>
-            <h4 class="card-title">Other Info</h4>
-            <div class="form-group">
-              <label for="exampleInputPassword1">Status</label>
-              <select class="form-control" name="status">
-              	<option value="Pending">Pending</option>
-                <option value="Active">Active</option>
-              	<option value="Inactive">Inactive</option>
-              	<option value="Picked Up">Picked Up</option>
-              	<option value="Arrived">Arrived</option>
-              	<option value="Delivered">Delivered</option>
-              	<option value="On hold">On hold</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="exampleInputPassword1">Dispatch Location</label>
-              <input type="text" class="form-control" value="" name="dispatchl" id="exampleInputPassword1" placeholder="Origin Port">
-            </div>
+                <?php if(isset($error_message)): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <?php echo $error_message; ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <?php endif; ?>
 
-            <div class="form-group">
-              <label for="exampleInputPassword1">Carrier</label>
-              <input type="text" class="form-control" value="" name="carrier" id="exampleInputPassword1" placeholder="Carrier Ex- DHL">
-            </div>
-            <div class="form-group">
-              <label for="exampleInputPassword1">Carrier reference number</label>
-              <input type="text" class="form-control" value="" name="carrier_ref" id="exampleInputPassword1" placeholder="Carrier reference number Ex- 32423">
-            </div>
-            <div class="form-group">
-              <label for="exampleInputPassword1">Weight(Add unit e.g KG)</label>
-              <input type="text" class="form-control" value="" name="weight" id="exampleInputPassword1" placeholder="Weight">
-            </div>
-            <div class="form-group">
-              <label for="exampleInputPassword1">Payment Mode</label>
-              <input type="text" class="form-control" value="" name="payment_mode" id="exampleInputPassword1" placeholder="Payment Mode">
-            </div>
-            <div class="form-group">
-              <label for="exampleInputPassword1">Package Image</label>
-              <input type="file" class="form-control" name="image" required id="exampleInputPassword1" >
-            </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-6 grid-margin stretch-card">
-      <div class="card">
-        <div class="card-body">
-          <h4 class="card-title">Receiver's Info</h4>
-          <p class="card-description">
-          </p>
-      
-            <div class="form-group">
-              <label for="exampleInputUsername1">Receiver's Name</label>
-              <input type="text" class="form-control" value="" name="rname" id="exampleInputUsername1" placeholder="Receiver's Name">
-            </div>
-            <div class="form-group">
-              <label for="exampleInputEmail1">Receiver's Contact</label>
-              <input type="number" class="form-control" value="" name="rcontact" id="exampleInputEmail1" placeholder="Receiver's Contact">
-            </div>
-            <div class="form-group">
-              <label for="exampleInputPassword1">Receiver's Email</label>
-              <input type="text" name="rmail" class="form-control" value="" id="exampleInputPassword1" placeholder="Receiver's Email">
-            </div>
-            <div class="form-group">
-              <label for="exampleInputConfirmPassword1">Receiver's Address</label>
-              <textarea class="form-control" name="raddress" placeholder="Receiver Address"></textarea>
-            </div>
-            <h4 class="card-title">Other Info</h4>
-            <div class="form-group">
-              <label for="exampleInputPassword1">Destination</label>
-              <input type="text" class="form-control" name="dest" value="" id="exampleInputPassword1" placeholder="Destination">
-            </div>
-           <div class="form-group">
-              <label for="exampleInputPassword1">Package description</label>
-              <input type="text" class="form-control" name="desc" value="" id="exampleInputPassword1" placeholder="Package Description">
-            </div>
-            <div class="form-group">
-              <label for="exampleInputPassword1">Dispatch Date</label>
-              <input type="date" class="form-control" name="dispatch" value="" id="exampleInputPassword1" placeholder="Origin PortS">
-            </div>
-          	<div class="form-group">
-              <label for="exampleInputPassword1">Estimated Delivery Date</label>
-              <input type="date" class="form-control" value="" name="delivery" id="exampleInputPassword1" placeholder="Origin PortS">
-            </div>
+                <?php if(isset($upload_error)): ?>
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <?php echo $upload_error; ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <?php endif; ?>
 
-            <div class="form-group">
-              <label for="exampleInputPassword1">Shipment mode</label>
-              <input type="text" class="form-control" value="" name="ship_mode" id="exampleInputPassword1" placeholder="Shipment mode">
-            </div>
-            <div class="form-group">
-              <label for="exampleInputPassword1">Quantity</label>
-              <input type="text" class="form-control" value="" name="quantity" id="exampleInputPassword1" placeholder="Quantity">
-            </div>
-            <div class="form-group">
-              <label for="exampleInputPassword1">Delivery Time</label>
-              <input type="time" class="form-control" value="" name="delivery_time" id="exampleInputPassword1" placeholder="Delivery time">
-            </div>
-        </div>
-      </div>
-    </div>
-</div>
-    <div class="col-12 grid-margin stretch-card">
-          <div class="card">
-            <div class="card-body">
-            	<button class="btn btn-primary btn-block" name="submit">Add</button>
-            </div>
-        </div>
-        </form>
-    </div>
+                <div class="row">
+                    <div class="col-12 grid-margin stretch-card">
+                        <div class="card">
+                            <div class="card-body">
+                                <label style="font-weight: bold;font-size: 25px;">TRACKING NUMBER</label>
+                                <input type="text" readonly value="<?php echo $tracking_number; ?>" name="tracking_number" class="form-control" id="exampleInputUsername1" placeholder="Tracking Number">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 grid-margin stretch-card">
+                      <div class="card">
+                        <div class="card-body">
+                          <h4 class="card-title">Sender's Info</h4>
+                          <p class="card-description">
+                            
+                          </p>
+                          <form method="post" action="" enctype="multipart/form-data" class="forms-sample">
+                            <div class="form-group">
+                              <label for="exampleInputUsername1">Sender's Name</label>
+                              <input type="text" class="form-control" name="sname" value="" id="exampleInputUsername1" placeholder="Sender's Name" required>
+                            </div>
+                            <div class="form-group">
+                              <label for="exampleInputEmail1">Sender's Contact</label>
+                              <input type="number" class="form-control" value="" name="scontact" id="exampleInputEmail1" placeholder="Sender's Contact" required>
+                            </div>
+                            <div class="form-group">
+                              <label for="exampleInputPassword1">Sender's Email</label>
+                              <input type="email" class="form-control" name="smail" value="" id="exampleInputPassword1" placeholder="Sender's Email">
+                            </div>
+                            <div class="form-group">
+                              <label for="exampleInputConfirmPassword1">Sender's Address</label>
+                              <textarea class="form-control" placeholder="Sender's Address" name="saddress" required></textarea>
+                            </div>
+                            <h4 class="card-title">Other Info</h4>
+                            <div class="form-group">
+                              <label for="exampleInputPassword1">Status</label>
+                              <select class="form-control" name="status">
+                                <option value="Pending">Pending</option>
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                                <option value="Picked Up">Picked Up</option>
+                                <option value="Arrived">Arrived</option>
+                                <option value="Delivered">Delivered</option>
+                                <option value="On hold">On hold</option>
+                              </select>
+                            </div>
+                            <div class="form-group">
+                              <label for="exampleInputPassword1">Dispatch Location</label>
+                              <input type="text" class="form-control" value="" name="dispatchl" id="exampleInputPassword1" placeholder="Origin Port" required>
+                            </div>
 
+                            <div class="form-group">
+                              <label for="exampleInputPassword1">Carrier</label>
+                              <input type="text" class="form-control" value="" name="carrier" id="exampleInputPassword1" placeholder="Carrier Ex- DHL" required>
+                            </div>
+                            <div class="form-group">
+                              <label for="exampleInputPassword1">Carrier reference number</label>
+                              <input type="text" class="form-control" value="" name="carrier_ref" id="exampleInputPassword1" placeholder="Carrier reference number Ex- 32423">
+                            </div>
+                            <div class="form-group">
+                              <label for="exampleInputPassword1">Weight(Add unit e.g KG)</label>
+                              <input type="text" class="form-control" value="" name="weight" id="exampleInputPassword1" placeholder="Weight" required>
+                            </div>
+                            <div class="form-group">
+                              <label for="exampleInputPassword1">Payment Mode</label>
+                              <input type="text" class="form-control" value="" name="payment_mode" id="exampleInputPassword1" placeholder="Payment Mode">
+                            </div>
+                            <div class="form-group">
+                              <label for="exampleInputPassword1">Package Image</label>
+                              <input type="file" class="form-control" name="image" required id="exampleInputPassword1">
+                            </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-6 grid-margin stretch-card">
+                      <div class="card">
+                        <div class="card-body">
+                          <h4 class="card-title">Receiver's Info</h4>
+                          <p class="card-description">
+                          </p>
+                      
+                            <div class="form-group">
+                              <label for="exampleInputUsername1">Receiver's Name</label>
+                              <input type="text" class="form-control" value="" name="rname" id="exampleInputUsername1" placeholder="Receiver's Name" required>
+                            </div>
+                            <div class="form-group">
+                              <label for="exampleInputEmail1">Receiver's Contact</label>
+                              <input type="number" class="form-control" value="" name="rcontact" id="exampleInputEmail1" placeholder="Receiver's Contact" required>
+                            </div>
+                            <div class="form-group">
+                              <label for="exampleInputPassword1">Receiver's Email</label>
+                              <input type="email" name="rmail" class="form-control" value="" id="exampleInputPassword1" placeholder="Receiver's Email">
+                            </div>
+                            <div class="form-group">
+                              <label for="exampleInputConfirmPassword1">Receiver's Address</label>
+                              <textarea class="form-control" name="raddress" placeholder="Receiver Address" required></textarea>
+                            </div>
+                            <h4 class="card-title">Other Info</h4>
+                            <div class="form-group">
+                              <label for="exampleInputPassword1">Destination</label>
+                              <input type="text" class="form-control" name="dest" value="" id="exampleInputPassword1" placeholder="Destination" required>
+                            </div>
+                           <div class="form-group">
+                              <label for="exampleInputPassword1">Package description</label>
+                              <input type="text" class="form-control" name="desc" value="" id="exampleInputPassword1" placeholder="Package Description" required>
+                            </div>
+                            <div class="form-group">
+                              <label for="exampleInputPassword1">Dispatch Date</label>
+                              <input type="date" class="form-control" name="dispatch" value="" id="exampleInputPassword1" placeholder="Dispatch Date" required>
+                            </div>
+                            <div class="form-group">
+                              <label for="exampleInputPassword1">Estimated Delivery Date</label>
+                              <input type="date" class="form-control" value="" name="delivery" id="exampleInputPassword1" placeholder="Estimated Delivery Date" required>
+                            </div>
 
+                            <div class="form-group">
+                              <label for="exampleInputPassword1">Shipment mode</label>
+                              <input type="text" class="form-control" value="" name="ship_mode" id="exampleInputPassword1" placeholder="Shipment mode" required>
+                            </div>
+                            <div class="form-group">
+                              <label for="exampleInputPassword1">Quantity</label>
+                              <input type="text" class="form-control" value="" name="quantity" id="exampleInputPassword1" placeholder="Quantity" required>
+                            </div>
+                            <div class="form-group">
+                              <label for="exampleInputPassword1">Delivery Time</label>
+                              <input type="time" class="form-control" value="" name="delivery_time" id="exampleInputPassword1" placeholder="Delivery time" required>
+                            </div>
+                        </div>
+                      </div>
+                    </div>
+                </div>
+                <div class="col-12 grid-margin stretch-card">
+                      <div class="card">
+                        <div class="card-body">
+                            <button type="submit" class="btn btn-primary btn-block" name="submit">Add</button>
+                        </div>
+                    </div>
+                    </form>
+                </div>
 
- </div>
+             </div>
 				<!-- content-wrapper ends -->
 				<!-- partial:partials/_footer.html -->
 				<footer class="footer">
@@ -276,14 +431,42 @@
     </div>
     <!-- container-scroller -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js" integrity="sha384-cuYeSxntonz0PPNlHhBs68uyIAVpIIOZZ5JqeqvYYIcEL727kskC66kF92t6Xl2V" crossorigin="anonymous"></script>
-  <script src="vendors/base/vendor.bundle.base.js"></script>
+<script src="vendors/base/vendor.bundle.base.js"></script>
+<script src="js/template.js"></script>
+<script src="vendors/typeahead.js/typeahead.bundle.min.js"></script>
+<script src="vendors/select2/select2.min.js"></script>
+<script src="js/file-upload.js"></script>
+<script src="js/typeahead.js"></script>
+<script src="js/select2.js"></script>
 
-  <script src="js/template.js"></script>
-
-  <script src="vendors/typeahead.js/typeahead.bundle.min.js"></script>
-  <script src="vendors/select2/select2.min.js"></script>
-  <script src="js/file-upload.js"></script>
-  <script src="js/typeahead.js"></script>
-  <script src="js/select2.js"></script>
+<!-- Client-side validation -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const form = document.querySelector('.forms-sample');
+    
+    // Add custom validation if needed beyond the required attributes
+    form.addEventListener('submit', function(event) {
+        // Additional validation can be added here if needed
+        
+        // Example: Validate email format
+        const emailFields = document.querySelectorAll('input[type="email"]');
+        emailFields.forEach(function(field) {
+            if (field.value !== '' && !validateEmail(field.value)) {
+                alert('Please enter a valid email address');
+                event.preventDefault();
+                field.focus();
+                return;
+            }
+        });
+    });
+    
+    // Email validation function
+    function validateEmail(email) {
+        const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+        return re.test(String(email).toLowerCase());
+    }
+});
+</script>
   </body>
 </html>
