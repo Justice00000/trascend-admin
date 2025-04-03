@@ -1,5 +1,48 @@
- 
+<?php
+// Database configuration for online hosting
+$host = "localhost"; // Use localhost:3306 if this doesn't work
+$username = "swissto_root"; // From your phpMyAdmin screenshot
+$password = "your_password"; // Replace with your actual database password
+$database = "swissto_app"; // From your phpMyAdmin screenshot
+
+// Establish database connection using PDO
+try {
+    $conn = new PDO("mysql:host=$host;dbname=$database", $username, $password);
+    // Set the PDO error mode to exception
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
+    // Process delete action if submitted
+    if(isset($_POST['delete']) && isset($_POST['tnumb'])) {
+        $tracking_number = $_POST['tnumb'];
+        $image = isset($_POST['image']) ? $_POST['image'] : "";
+        
+        // Delete the record
+        $stmt = $conn->prepare("DELETE FROM tracking_orders WHERE tracking_number = :tracking_number");
+        $stmt->bindParam(':tracking_number', $tracking_number);
+        $stmt->execute();
+        
+        // Delete the image file if it exists
+        if(!empty($image)) {
+            $image_path = "../uploads/" . $image;
+            if(file_exists($image_path)) {
+                unlink($image_path);
+            }
+        }
+        
+        // Redirect to refresh the page
+        header("Location: index.php?deleted=1");
+        exit();
+    }
+    
+    // Fetch all tracking records
+    $stmt = $conn->prepare("SELECT * FROM tracking_orders ORDER BY created_at DESC");
+    $stmt->execute();
+    $tracking_records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+} catch(PDOException $e) {
+    $connection_error = "Database Error: " . $e->getMessage();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -28,13 +71,13 @@
                                          
             </ul>
             <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-center">
-  <a class="navbar-brand brand-logo" href="index.php">
-    <img src="images/logo.png" alt="logo" class="enhanced-logo"/>
-  </a>
-  <a class="navbar-brand brand-logo-mini" href="index.php">
-    <img src="images/logo.png" alt="logo" class="enhanced-logo-mini"/>
-  </a>
-</div>
+              <a class="navbar-brand brand-logo" href="index.php">
+                <img src="images/logo.png" alt="logo" class="enhanced-logo"/>
+              </a>
+              <a class="navbar-brand brand-logo-mini" href="index.php">
+                <img src="images/logo.png" alt="logo" class="enhanced-logo-mini"/>
+              </a>
+            </div>
             <ul class="navbar-nav navbar-nav-right">
                 
                 
@@ -101,10 +144,7 @@
                   </a>
 
               </li>
-              
-              
-              
-                          </ul>
+            </ul>
         </div>
       </nav>
     </div>
@@ -113,99 +153,83 @@
 			<div class="main-panel">
 				<div class="content-wrapper">
 
-<div class="row">
-	<div class="col-lg-12 grid-margin stretch-card">
-              <div class="card">
-                <div class="card-body">
-                  <h4 class="card-title">TRACKERS</h4>
-                 
-                  <div class="table-responsive pt-3">
-                    <table class="table table-dark">
-                      <thead>
-                        <tr>
-                          <th>#</th>
-                          <th>Image</th>
-                          <th>Tracking Number</th>
-                          <th>Status</th>
-                          <th>Date Added</th>
-                          <th>Edit</th>
-                          <th>Delete</th>
-                          <th>Copy</th>
-                          <th>View Details</th>
-                          <th>View Updates</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        
-                                                 <form method="post" action="index.php">
-                         	<input type="hidden" name="tnumb" value="CC-03-234791">
-                         <tr>
-                         	<td>1</td>
-                         	<td><img style="height: 90px;width: 90px;" src="../uploads/CC-03-234791.png" ></td>
-                          <td><b>CC-03-234791</b></td>
-                         	<td><b>On hold</b></td>
-                         	<td><b>2025-03-26 19:21:01</b></td>
-                         	<td><a href="edit-tracking.php?num=CC-03-234791" class="btn btn-primary">Update</a></td>
-                         	<td><button type="submit" name="delete" onclick="return confirm('Do you really want to delete this ?')" class="btn btn-danger">Delete</button></td>
-                          <td><button type="button" onclick="copyContent()" class="btn btn-info">Copy Tracking Number</button></td>
-                          <td><a class="btn btn-secondary" href="view-details.php?num=CC-03-234791">View Details</a></td>
-                          <td><a class="btn btn-warning" href="view-updates.php?num=CC-03-234791">View Updates</a></td>
-                         </tr>
-                         <input type="hidden" id="tn25" value="CC-03-234791">
-                         <input type="hidden" name="image" value="CC-03-234791.png">
-                         </form>
-                            <script>
-                              let text = document.getElementById('tn25').value;
-                              const copyContent = async () => {
-                                try {
-                                  await navigator.clipboard.writeText(text);
-                                  alert("Copied the tracking number: " + text);
-                                } catch (err) {
-                                  // console.error('Failed to copy: ', err);
-                                }
-                              }
-                            </script>
-                                              <form method="post" action="index.php">
-                         	<input type="hidden" name="tnumb" value="CC-03-376081">
-                         <tr>
-                         	<td>2</td>
-                         	<td><img style="height: 90px;width: 90px;" src="../uploads/CC-03-376081.png" ></td>
-                          <td><b>CC-03-376081</b></td>
-                         	<td><b>On going</b></td>
-                         	<td><b>2025-03-29 06:29:15</b></td>
-                         	<td><a href="edit-tracking.php?num=CC-03-376081" class="btn btn-primary">Update</a></td>
-                         	<td><button type="submit" name="delete" onclick="return confirm('Do you really want to delete this ?')" class="btn btn-danger">Delete</button></td>
-                          <td><button type="button" onclick="copyContent()" class="btn btn-info">Copy Tracking Number</button></td>
-                          <td><a class="btn btn-secondary" href="view-details.php?num=CC-03-376081">View Details</a></td>
-                          <td><a class="btn btn-warning" href="view-updates.php?num=CC-03-376081">View Updates</a></td>
-                         </tr>
-                         <input type="hidden" id="tn26" value="CC-03-376081">
-                         <input type="hidden" name="image" value="CC-03-376081.png">
-                         </form>
-                            <script>
-                              let text = document.getElementById('tn26').value;
-                              const copyContent = async () => {
-                                try {
-                                  await navigator.clipboard.writeText(text);
-                                  alert("Copied the tracking number: " + text);
-                                } catch (err) {
-                                  // console.error('Failed to copy: ', err);
-                                }
-                              }
-                            </script>
-                     
-                      </tbody>
-                    </table>
-                  </div>
+                <?php if(isset($_GET['deleted'])): ?>
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    Tracking record deleted successfully.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-              </div>
+                <?php endif; ?>
+
+                <?php if(isset($connection_error)): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <?php echo $connection_error; ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <?php endif; ?>
+
+                <div class="row">
+                    <div class="col-lg-12 grid-margin stretch-card">
+                      <div class="card">
+                        <div class="card-body">
+                          <h4 class="card-title">TRACKERS</h4>
+                         
+                          <div class="table-responsive pt-3">
+                            <table class="table table-dark">
+                              <thead>
+                                <tr>
+                                  <th>#</th>
+                                  <th>Image</th>
+                                  <th>Tracking Number</th>
+                                  <th>Status</th>
+                                  <th>Date Added</th>
+                                  <th>Edit</th>
+                                  <th>Delete</th>
+                                  <th>Copy</th>
+                                  <th>View Details</th>
+                                  <th>View Updates</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <?php if(isset($tracking_records) && count($tracking_records) > 0): ?>
+                                    <?php $counter = 1; ?>
+                                    <?php foreach($tracking_records as $record): ?>
+                                        <form method="post" action="index.php">
+                                            <input type="hidden" name="tnumb" value="<?php echo $record['tracking_number']; ?>">
+                                            <tr>
+                                                <td><?php echo $counter++; ?></td>
+                                                <td>
+                                                    <?php if(!empty($record['package_image'])): ?>
+                                                        <img style="height: 90px;width: 90px;" src="<?php echo $record['package_image']; ?>" >
+                                                    <?php else: ?>
+                                                        <img style="height: 90px;width: 90px;" src="images/no-image.png" >
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td><b><?php echo $record['tracking_number']; ?></b></td>
+                                                <td><b><?php echo $record['status']; ?></b></td>
+                                                <td><b><?php echo $record['created_at']; ?></b></td>
+                                                <td><a href="edit-tracking.php?num=<?php echo $record['tracking_number']; ?>" class="btn btn-primary">Update</a></td>
+                                                <td><button type="submit" name="delete" onclick="return confirm('Do you really want to delete this ?')" class="btn btn-danger">Delete</button></td>
+                                                <td><button type="button" onclick="copyTrackingNumber('<?php echo $record['tracking_number']; ?>')" class="btn btn-info">Copy Tracking Number</button></td>
+                                                <td><a class="btn btn-secondary" href="view-details.php?num=<?php echo $record['tracking_number']; ?>">View Details</a></td>
+                                                <td><a class="btn btn-warning" href="view-updates.php?num=<?php echo $record['tracking_number']; ?>">View Updates</a></td>
+                                            </tr>
+                                            <input type="hidden" name="image" value="<?php echo basename($record['package_image']); ?>">
+                                        </form>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="10" class="text-center">No tracking records found</td>
+                                    </tr>
+                                <?php endif; ?>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                </div>
+
             </div>
-</div>
-
-
-
-
-</div>
 				<!-- content-wrapper ends -->
 				<!-- partial:partials/_footer.html -->
 				<footer class="footer">
@@ -224,14 +248,24 @@
     </div>
     <!-- container-scroller -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js" integrity="sha384-cuYeSxntonz0PPNlHhBs68uyIAVpIIOZZ5JqeqvYYIcEL727kskC66kF92t6Xl2V" crossorigin="anonymous"></script>
-  <script src="vendors/base/vendor.bundle.base.js"></script>
+<script src="vendors/base/vendor.bundle.base.js"></script>
+<script src="js/template.js"></script>
+<script src="vendors/typeahead.js/typeahead.bundle.min.js"></script>
+<script src="vendors/select2/select2.min.js"></script>
+<script src="js/file-upload.js"></script>
+<script src="js/typeahead.js"></script>
+<script src="js/select2.js"></script>
 
-  <script src="js/template.js"></script>
-
-  <script src="vendors/typeahead.js/typeahead.bundle.min.js"></script>
-  <script src="vendors/select2/select2.min.js"></script>
-  <script src="js/file-upload.js"></script>
-  <script src="js/typeahead.js"></script>
-  <script src="js/select2.js"></script>
+<script>
+function copyTrackingNumber(trackingNumber) {
+    navigator.clipboard.writeText(trackingNumber)
+        .then(() => {
+            alert("Copied the tracking number: " + trackingNumber);
+        })
+        .catch(err => {
+            console.error('Failed to copy: ', err);
+        });
+}
+</script>
   </body>
 </html>

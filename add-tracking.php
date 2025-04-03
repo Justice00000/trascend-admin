@@ -1,6 +1,6 @@
 <?php
 // Database configuration for online hosting
-$host = "localhost"; // Use localhost:3306 if this doesn't work
+$host = "localhost:3306"; // Use localhost:3306 if this doesn't work
 $username = "swissto_root"; // From your phpMyAdmin screenshot
 $password = "CeeJay001$"; // Replace with your actual database password
 $database = "swissto_app"; // From your phpMyAdmin screenshot
