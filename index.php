@@ -1,4 +1,4 @@
-   
+ 
     
 <!DOCTYPE html>
 <html lang="en">
@@ -28,10 +28,10 @@
                                          
             </ul>
             <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-center">
-  <a class="navbar-brand brand-logo" href="dashboard.php">
+  <a class="navbar-brand brand-logo" href="index.php">
     <img src="images/logo.png" alt="logo" class="enhanced-logo"/>
   </a>
-  <a class="navbar-brand brand-logo-mini" href="dashboard.php">
+  <a class="navbar-brand brand-logo-mini" href="index.php">
     <img src="images/logo.png" alt="logo" class="enhanced-logo-mini"/>
   </a>
 </div>
@@ -67,7 +67,7 @@
         <div class="container">
             <ul class="nav page-navigation">
               <li class="nav-item">
-                <a class="nav-link" href="dashboard.php">
+                <a class="nav-link" href="index.php">
                   <i class="mdi mdi-file-document-box menu-icon"></i>
                   <span class="menu-title">Dashboard</span>
                 </a>
@@ -137,7 +137,7 @@
                       </thead>
                       <tbody>
                         
-                                                 <form method="post" action="dashboard.php">
+                                                 <form method="post" action="index.php">
                          	<input type="hidden" name="tnumb" value="CC-03-234791">
                          <tr>
                          	<td>1</td>
@@ -165,7 +165,7 @@
                                 }
                               }
                             </script>
-                                              <form method="post" action="dashboard.php">
+                                              <form method="post" action="index.php">
                          	<input type="hidden" name="tnumb" value="CC-03-376081">
                          <tr>
                          	<td>2</td>

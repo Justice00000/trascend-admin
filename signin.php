@@ -14,7 +14,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Validate credentials
     if ($username === $valid_username && $password === $valid_password) {
         $_SESSION['user'] = $username;
-        header("Location: dashboard.php"); // Redirect to the admin dashboard
+        header("Location: index.php"); // Redirect to the admin dashboard
         exit();
     } else {
         $error_message = "Invalid username or password!";
