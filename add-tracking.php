@@ -1,4 +1,4 @@
-<?php
+<?php 
 // Database configuration for PostgreSQL
 $dsn = "pgsql:host=dpg-cvn925a4d50c73fv6m70-a;port=5432;dbname=admin_db_5jq5;user=admin_db_5jq5_user;password=zQ7Zey6xTtDtqT99fKgUepfsuEhCjIoZ";
 

@@ -1,45 +1,36 @@
 <?php
-// Database configuration for online hosting
-$host = "localhost"; // Use localhost:3306 if this doesn't work
-$username = "swissto_root"; // From your phpMyAdmin screenshot
-$password = "your_password"; // Replace with your actual database password
-$database = "swissto_app"; // From your phpMyAdmin screenshot
+// Database configuration for PostgreSQL
+$dsn = "pgsql:host=dpg-cvn925a4d50c73fv6m70-a;port=5432;dbname=admin_db_5jq5;user=admin_db_5jq5_user;password=zQ7Zey6xTtDtqT99fKgUepfsuEhCjIoZ";
 
-// Establish database connection using PDO
 try {
-    $conn = new PDO("mysql:host=$host;dbname=$database", $username, $password);
-    // Set the PDO error mode to exception
+    $conn = new PDO($dsn);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-    // Process delete action if submitted
-    if(isset($_POST['delete']) && isset($_POST['tnumb'])) {
-        $tracking_number = $_POST['tnumb'];
-        $image = isset($_POST['image']) ? $_POST['image'] : "";
-        
-        // Delete the record
-        $stmt = $conn->prepare("DELETE FROM tracking_orders WHERE tracking_number = :tracking_number");
-        $stmt->bindParam(':tracking_number', $tracking_number);
-        $stmt->execute();
-        
-        // Delete the image file if it exists
-        if(!empty($image)) {
-            $image_path = "../uploads/" . $image;
-            if(file_exists($image_path)) {
-                unlink($image_path);
-            }
-        }
-        
-        // Redirect to refresh the page
-        header("Location: index.php?deleted=1");
-        exit();
-    }
     
     // Fetch all tracking records
     $stmt = $conn->prepare("SELECT * FROM tracking_orders ORDER BY created_at DESC");
     $stmt->execute();
     $tracking_records = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-} catch(PDOException $e) {
+
+    // Check if the delete button was clicked
+    if (isset($_POST['delete'])) {
+        $tracking_number = $_POST['tnumb'];
+        $image_file = $_POST['image'];
+
+        // Delete the tracking record
+        $delete_stmt = $conn->prepare("DELETE FROM tracking_orders WHERE tracking_number = :tracking_number");
+        $delete_stmt->bindParam(':tracking_number', $tracking_number);
+        $delete_stmt->execute();
+
+        // Delete the associated image file if it exists
+        if (!empty($image_file) && file_exists($image_file)) {
+            unlink($image_file);
+        }
+
+        // Redirect back to the dashboard with a success parameter
+        header("Location: index.php?deleted=1");
+        exit();
+    }
+} catch (PDOException $e) {
     $connection_error = "Database Error: " . $e->getMessage();
 }
 ?>
