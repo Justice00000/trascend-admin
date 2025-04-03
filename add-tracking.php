@@ -194,10 +194,10 @@ if (isset($_POST['submit'])) {
                                          
             </ul>
             <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-center">
-              <a class="navbar-brand brand-logo" href="dashboard.php">
+              <a class="navbar-brand brand-logo" href="index.php">
                 <img src="images/logo.png" alt="logo" class="enhanced-logo"/>
               </a>
-              <a class="navbar-brand brand-logo-mini" href="dashboard.php">
+              <a class="navbar-brand brand-logo-mini" href="index.php">
                 <img src="images/logo.png" alt="logo" class="enhanced-logo-mini"/>
               </a>
             </div>
@@ -233,7 +233,7 @@ if (isset($_POST['submit'])) {
         <div class="container">
             <ul class="nav page-navigation">
               <li class="nav-item">
-                <a class="nav-link" href="dashboard.php">
+                <a class="nav-link" href="index.php">
                   <i class="mdi mdi-file-document-box menu-icon"></i>
                   <span class="menu-title">Dashboard</span>
                 </a>
