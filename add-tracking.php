@@ -5,12 +5,13 @@ $username = "swissto_root"; // From your phpMyAdmin screenshot
 $password = "CeeJay001$"; // Replace with your actual database password
 $database = "swissto_app"; // From your phpMyAdmin screenshot
 
-// Establish database connection
-$conn = new mysqli($host, $username, $password, $database);
-
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+// Establish database connection using PDO instead of mysqli
+try {
+    $conn = new PDO("mysql:host=$host;dbname=$database", $username, $password);
+    // Set the PDO error mode to exception
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch(PDOException $e) {
+    die("Connection failed: " . $e->getMessage());
 }
 
 // Initialize tracking number with month and random number
@@ -18,127 +19,155 @@ $tracking_number = "CC-" . date("m") . "-" . rand(100000, 999999);
 
 // Process form submission
 if (isset($_POST['submit'])) {
-    // Sender information
-    $sname = $conn->real_escape_string($_POST['sname']);
-    $scontact = $conn->real_escape_string($_POST['scontact']);
-    $smail = $conn->real_escape_string($_POST['smail']);
-    $saddress = $conn->real_escape_string($_POST['saddress']);
-    
-    // Receiver information
-    $rname = $conn->real_escape_string($_POST['rname']);
-    $rcontact = $conn->real_escape_string($_POST['rcontact']);
-    $rmail = $conn->real_escape_string($_POST['rmail']);
-    $raddress = $conn->real_escape_string($_POST['raddress']);
-    
-    // Shipment information
-    $status = $conn->real_escape_string($_POST['status']);
-    $dispatchl = $conn->real_escape_string($_POST['dispatchl']);
-    $carrier = $conn->real_escape_string($_POST['carrier']);
-    $carrier_ref = $conn->real_escape_string($_POST['carrier_ref']);
-    $weight = $conn->real_escape_string($_POST['weight']);
-    $payment_mode = $conn->real_escape_string($_POST['payment_mode']);
-    $dest = $conn->real_escape_string($_POST['dest']);
-    $desc = $conn->real_escape_string($_POST['desc']);
-    $dispatch_date = $conn->real_escape_string($_POST['dispatch']);
-    $delivery_date = $conn->real_escape_string($_POST['delivery']);
-    $ship_mode = $conn->real_escape_string($_POST['ship_mode']);
-    $quantity = $conn->real_escape_string($_POST['quantity']);
-    $delivery_time = $conn->real_escape_string($_POST['delivery_time']);
-    
-    // Handle file upload
-    $image_path = "";
-    if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-        $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
-        $file_type = $_FILES['image']['type'];
+    try {
+        // Sender information
+        $sname = $_POST['sname'];
+        $scontact = $_POST['scontact'];
+        $smail = $_POST['smail'];
+        $saddress = $_POST['saddress'];
         
-        if (in_array($file_type, $allowed_types)) {
-            $upload_dir = "uploads/";
+        // Receiver information
+        $rname = $_POST['rname'];
+        $rcontact = $_POST['rcontact'];
+        $rmail = $_POST['rmail'];
+        $raddress = $_POST['raddress'];
+        
+        // Shipment information
+        $status = $_POST['status'];
+        $dispatchl = $_POST['dispatchl'];
+        $carrier = $_POST['carrier'];
+        $carrier_ref = $_POST['carrier_ref'];
+        $weight = $_POST['weight'];
+        $payment_mode = $_POST['payment_mode'];
+        $dest = $_POST['dest'];
+        $desc = $_POST['desc'];
+        $dispatch_date = $_POST['dispatch'];
+        $delivery_date = $_POST['delivery'];
+        $ship_mode = $_POST['ship_mode'];
+        $quantity = $_POST['quantity'];
+        $delivery_time = $_POST['delivery_time'];
+        
+        // Handle file upload
+        $image_path = "";
+        if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
+            $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
+            $file_type = $_FILES['image']['type'];
             
-            // Create directory if it doesn't exist
-            if (!file_exists($upload_dir)) {
-                mkdir($upload_dir, 0777, true);
-            }
-            
-            // Generate unique filename
-            $filename = $tracking_number . "_" . basename($_FILES['image']['name']);
-            $target_file = $upload_dir . $filename;
-            
-            // Move the uploaded file
-            if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
-                $image_path = $target_file;
+            if (in_array($file_type, $allowed_types)) {
+                $upload_dir = "uploads/";
+                
+                // Create directory if it doesn't exist
+                if (!file_exists($upload_dir)) {
+                    mkdir($upload_dir, 0777, true);
+                }
+                
+                // Generate unique filename
+                $filename = $tracking_number . "_" . basename($_FILES['image']['name']);
+                $target_file = $upload_dir . $filename;
+                
+                // Move the uploaded file
+                if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
+                    $image_path = $target_file;
+                } else {
+                    $upload_error = "Error uploading file.";
+                }
             } else {
-                $upload_error = "Error uploading file.";
+                $upload_error = "Invalid file type. Only JPG, PNG, and GIF are allowed.";
             }
-        } else {
-            $upload_error = "Invalid file type. Only JPG, PNG, and GIF are allowed.";
         }
-    }
-    
-    // Current timestamp for creation date
-    $created_at = date("Y-m-d H:i:s");
-    
-    // SQL query to insert tracking data - make sure to use the correct table name (tracking_orders)
-    $sql = "INSERT INTO tracking_orders (
-        tracking_number, 
-        sender_name, 
-        sender_contact, 
-        sender_email, 
-        sender_address, 
-        receiver_name, 
-        receiver_contact, 
-        receiver_email, 
-        receiver_address, 
-        status, 
-        dispatch_location, 
-        carrier, 
-        carrier_ref_no, 
-        weight, 
-        payment_mode, 
-        destination, 
-        package_desc, 
-        dispatch_date, 
-        delivery_date, 
-        shipment_mode, 
-        quantity, 
-        delivery_time, 
-        package_image, 
-        created_at
-    ) VALUES (
-        '$tracking_number', 
-        '$sname', 
-        '$scontact', 
-        '$smail', 
-        '$saddress', 
-        '$rname', 
-        '$rcontact', 
-        '$rmail', 
-        '$raddress', 
-        '$status', 
-        '$dispatchl', 
-        '$carrier', 
-        '$carrier_ref', 
-        '$weight', 
-        '$payment_mode', 
-        '$dest', 
-        '$desc', 
-        '$dispatch_date', 
-        '$delivery_date', 
-        '$ship_mode', 
-        '$quantity', 
-        '$delivery_time', 
-        '$image_path', 
-        '$created_at'
-    )";
-    
-    // Execute query
-    if ($conn->query($sql) === TRUE) {
+        
+        // Current timestamp for creation date
+        $created_at = date("Y-m-d H:i:s");
+        
+        // SQL query to insert tracking data using PDO prepared statement
+        $stmt = $conn->prepare("INSERT INTO tracking_orders (
+            tracking_number, 
+            sender_name, 
+            sender_contact, 
+            sender_email, 
+            sender_address, 
+            receiver_name, 
+            receiver_contact, 
+            receiver_email, 
+            receiver_address, 
+            status, 
+            dispatch_location, 
+            carrier, 
+            carrier_ref_no, 
+            weight, 
+            payment_mode, 
+            destination, 
+            package_desc, 
+            dispatch_date, 
+            delivery_date, 
+            shipment_mode, 
+            quantity, 
+            delivery_time, 
+            package_image, 
+            created_at
+        ) VALUES (
+            :tracking_number, 
+            :sname, 
+            :scontact, 
+            :smail, 
+            :saddress, 
+            :rname, 
+            :rcontact, 
+            :rmail, 
+            :raddress, 
+            :status, 
+            :dispatchl, 
+            :carrier, 
+            :carrier_ref, 
+            :weight, 
+            :payment_mode, 
+            :dest, 
+            :desc, 
+            :dispatch_date, 
+            :delivery_date, 
+            :ship_mode, 
+            :quantity, 
+            :delivery_time, 
+            :image_path, 
+            :created_at
+        )");
+        
+        // Bind parameters
+        $stmt->bindParam(':tracking_number', $tracking_number);
+        $stmt->bindParam(':sname', $sname);
+        $stmt->bindParam(':scontact', $scontact);
+        $stmt->bindParam(':smail', $smail);
+        $stmt->bindParam(':saddress', $saddress);
+        $stmt->bindParam(':rname', $rname);
+        $stmt->bindParam(':rcontact', $rcontact);
+        $stmt->bindParam(':rmail', $rmail);
+        $stmt->bindParam(':raddress', $raddress);
+        $stmt->bindParam(':status', $status);
+        $stmt->bindParam(':dispatchl', $dispatchl);
+        $stmt->bindParam(':carrier', $carrier);
+        $stmt->bindParam(':carrier_ref', $carrier_ref);
+        $stmt->bindParam(':weight', $weight);
+        $stmt->bindParam(':payment_mode', $payment_mode);
+        $stmt->bindParam(':dest', $dest);
+        $stmt->bindParam(':desc', $desc);
+        $stmt->bindParam(':dispatch_date', $dispatch_date);
+        $stmt->bindParam(':delivery_date', $delivery_date);
+        $stmt->bindParam(':ship_mode', $ship_mode);
+        $stmt->bindParam(':quantity', $quantity);
+        $stmt->bindParam(':delivery_time', $delivery_time);
+        $stmt->bindParam(':image_path', $image_path);
+        $stmt->bindParam(':created_at', $created_at);
+        
+        // Execute query
+        $stmt->execute();
+        
         // Set success message
         $success_message = "Tracking added successfully with tracking number: " . $tracking_number;
         
         // Generate new tracking number for next entry
         $tracking_number = "CC-" . date("m") . "-" . rand(100000, 999999);
-    } else {
-        $error_message = "Error: " . $conn->error;
+    } catch(PDOException $e) {
+        $error_message = "Error: " . $e->getMessage();
     }
 }
 ?>
@@ -209,7 +238,7 @@ if (isset($_POST['submit'])) {
         <div class="container">
             <ul class="nav page-navigation">
               <li class="nav-item">
-                <a class="nav-link" href="index.php">
+                <a class="nav-link" href="dashboard.php">
                   <i class="mdi mdi-file-document-box menu-icon"></i>
                   <span class="menu-title">Dashboard</span>
                 </a>
