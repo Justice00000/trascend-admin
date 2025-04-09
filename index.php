@@ -1,4 +1,7 @@
 <?php
+// Ensure no output before headers
+ob_start();
+
 // Database configuration - use environment variables or a secure configuration file
 $dbConfig = [
     'host' => getenv('DB_HOST') ?: 'dpg-cvn925a4d50c73fv6m70-a',
@@ -18,6 +21,11 @@ $dsn = sprintf(
     $dbConfig['password']
 );
 
+// Initialize variables
+$tracking_records = [];
+$connection_error = null;
+$update_error = null;
+
 try {
     // Create PDO connection with error mode and persistent connections
     $conn = new PDO($dsn, null, null, [
@@ -26,77 +34,42 @@ try {
         PDO::ATTR_EMULATE_PREPARES => false
     ]);
     
-    // Sanitize and validate tracking number
-    $tracking_number = filter_input(INPUT_GET, 'num', FILTER_SANITIZE_STRING);
-    
-    if (empty($tracking_number)) {
-        header("Location: index.php");
-        exit();
-    }
-    
-    // Fetch tracking record details with parameterized query
-    $stmt = $conn->prepare("SELECT * FROM tracking_orders WHERE tracking_number = :tracking_number");
-    $stmt->bindParam(':tracking_number', $tracking_number, PDO::PARAM_STR);
+    // Fetch all tracking records
+    $stmt = $conn->prepare("SELECT * FROM tracking_orders ORDER BY created_at DESC");
     $stmt->execute();
-    $tracking_record = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if (!$tracking_record) {
-        header("Location: index.php?error=record_not_found");
-        exit();
-    }
-    
-    // Process form submission for updates
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
-        // Sanitize and validate input
-        $status = filter_input(INPUT_POST, 'status', FILTER_SANITIZE_STRING);
-        $dispatch_location = filter_input(INPUT_POST, 'dispatch_location', FILTER_SANITIZE_STRING);
-        $date = filter_input(INPUT_POST, 'date', FILTER_SANITIZE_STRING);
-        $time = filter_input(INPUT_POST, 'time', FILTER_SANITIZE_STRING);
-        $delivery_charge = filter_input(INPUT_POST, 'delivery_charge', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-        $total_charge = filter_input(INPUT_POST, 'total_charge', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-        $note = filter_input(INPUT_POST, 'note', FILTER_SANITIZE_STRING);
+    $tracking_records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Handle delete operation
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete'])) {
+        $tracking_number = filter_input(INPUT_POST, 'tnumb', FILTER_UNSAFE_RAW);
+        $tracking_number = trim(htmlspecialchars($tracking_number, ENT_QUOTES, 'UTF-8'));
         
-        // Validate required fields
-        if (empty($status) || empty($dispatch_location)) {
-            $update_error = "Status and Current Location are required.";
-        } else {
-            // Prepare update statement with additional fields
-            $update_stmt = $conn->prepare("
-                UPDATE tracking_orders 
-                SET 
-                    status = :status, 
-                    dispatch_location = :dispatch_location,
-                    tracking_date = :tracking_date,
-                    tracking_time = :tracking_time,
-                    delivery_charge = :delivery_charge,
-                    total_charge = :total_charge,
-                    note = :note,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE tracking_number = :tracking_number
-            ");
-            
-            // Bind parameters
-            $update_stmt->bindParam(':status', $status, PDO::PARAM_STR);
-            $update_stmt->bindParam(':dispatch_location', $dispatch_location, PDO::PARAM_STR);
-            $update_stmt->bindParam(':tracking_date', $date, PDO::PARAM_STR);
-            $update_stmt->bindParam(':tracking_time', $time, PDO::PARAM_STR);
-            $update_stmt->bindParam(':delivery_charge', $delivery_charge, PDO::PARAM_STR);
-            $update_stmt->bindParam(':total_charge', $total_charge, PDO::PARAM_STR);
-            $update_stmt->bindParam(':note', $note, PDO::PARAM_STR);
-            $update_stmt->bindParam(':tracking_number', $tracking_number, PDO::PARAM_STR);
+        // Optional: Delete associated image if exists
+        $image_name = filter_input(INPUT_POST, 'image', FILTER_UNSAFE_RAW);
+        $image_name = trim(htmlspecialchars($image_name, ENT_QUOTES, 'UTF-8'));
+        
+        if (!empty($tracking_number)) {
+            $delete_stmt = $conn->prepare("DELETE FROM tracking_orders WHERE tracking_number = :tracking_number");
+            $delete_stmt->bindParam(':tracking_number', $tracking_number, PDO::PARAM_STR);
             
             try {
-                if ($update_stmt->execute()) {
-                    // Redirect to view details with success message
-                    header("Location: view-details.php?num=" . urlencode($tracking_number) . "&updated=1");
+                if ($delete_stmt->execute()) {
+                    // Optional: Delete image file if it exists
+                    if (!empty($image_name) && $image_name !== 'no-image.png') {
+                        $image_path = "uploads/" . $image_name;
+                        if (file_exists($image_path)) {
+                            unlink($image_path);
+                        }
+                    }
+                    
+                    // Redirect to prevent form resubmission
+                    header("Location: index.php?deleted=1");
+                    ob_end_clean();
                     exit();
-                } else {
-                    $update_error = "Failed to update tracking information.";
                 }
             } catch (PDOException $e) {
-                $update_error = "Update Error: " . $e->getMessage();
-                // Log the error securely
-                error_log("Tracking Update Error: " . $e->getMessage());
+                error_log("Delete Error: " . $e->getMessage());
+                $connection_error = "Failed to delete tracking record.";
             }
         }
     }
@@ -113,7 +86,7 @@ try {
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Admin Dashboard</title>
+    <title>Admin Dashboard - Transcend Logistics</title>
     <!-- base:css -->
     <link rel="stylesheet" href="vendors/mdi/css/materialdesignicons.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
@@ -130,10 +103,7 @@ try {
       <nav class="navbar top-navbar col-lg-12 col-12 p-0">
         <div class="container-fluid">
           <div class="navbar-menu-wrapper d-flex align-items-center justify-content-between">
-            <ul class="navbar-nav navbar-nav-left">
-              
-                                         
-            </ul>
+            <ul class="navbar-nav navbar-nav-left"></ul>
             <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-center">
               <a class="navbar-brand brand-logo" href="index.php">
                 <img src="images/logo.png" alt="logo" class="enhanced-logo"/>
@@ -143,9 +113,6 @@ try {
               </a>
             </div>
             <ul class="navbar-nav navbar-nav-right">
-                
-                
-                
                 <li class="nav-item nav-profile dropdown">
                   <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" id="profileDropdown">
                     <span class="nav-profile-name">Admin</span>
@@ -206,7 +173,6 @@ try {
                     <span class="menu-title">Logout</span>
                     <i class="menu-arrow"></i>
                   </a>
-
               </li>
             </ul>
         </div>
@@ -216,7 +182,6 @@ try {
 		<div class="container-fluid page-body-wrapper">
 			<div class="main-panel">
 				<div class="content-wrapper">
-
                 <?php if(isset($_GET['deleted'])): ?>
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
                     Tracking record deleted successfully.
@@ -226,7 +191,7 @@ try {
 
                 <?php if(isset($connection_error)): ?>
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <?php echo $connection_error; ?>
+                    <?php echo htmlspecialchars($connection_error); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
                 <?php endif; ?>
@@ -254,30 +219,30 @@ try {
                                 </tr>
                               </thead>
                               <tbody>
-                                <?php if(isset($tracking_records) && count($tracking_records) > 0): ?>
+                                <?php if(!empty($tracking_records)): ?>
                                     <?php $counter = 1; ?>
                                     <?php foreach($tracking_records as $record): ?>
                                         <form method="post" action="index.php">
-                                            <input type="hidden" name="tnumb" value="<?php echo $record['tracking_number']; ?>">
+                                            <input type="hidden" name="tnumb" value="<?php echo htmlspecialchars($record['tracking_number']); ?>">
                                             <tr>
                                                 <td><?php echo $counter++; ?></td>
                                                 <td>
                                                     <?php if(!empty($record['package_image'])): ?>
-                                                        <img style="height: 90px;width: 90px;" src="<?php echo $record['package_image']; ?>" >
+                                                        <img style="height: 90px;width: 90px;" src="<?php echo htmlspecialchars($record['package_image']); ?>" alt="Package Image">
                                                     <?php else: ?>
-                                                        <img style="height: 90px;width: 90px;" src="images/no-image.png" >
+                                                        <img style="height: 90px;width: 90px;" src="images/no-image.png" alt="No Image">
                                                     <?php endif; ?>
                                                 </td>
-                                                <td><b><?php echo $record['tracking_number']; ?></b></td>
-                                                <td><b><?php echo $record['status']; ?></b></td>
-                                                <td><b><?php echo $record['created_at']; ?></b></td>
-                                                <td><a href="edit-tracking.php?num=<?php echo $record['tracking_number']; ?>" class="btn btn-primary">Update</a></td>
+                                                <td><b><?php echo htmlspecialchars($record['tracking_number']); ?></b></td>
+                                                <td><b><?php echo htmlspecialchars($record['status']); ?></b></td>
+                                                <td><b><?php echo htmlspecialchars($record['created_at']); ?></b></td>
+                                                <td><a href="edit-tracking.php?num=<?php echo urlencode($record['tracking_number']); ?>" class="btn btn-primary">Update</a></td>
                                                 <td><button type="submit" name="delete" onclick="return confirm('Do you really want to delete this ?')" class="btn btn-danger">Delete</button></td>
-                                                <td><button type="button" onclick="copyTrackingNumber('<?php echo $record['tracking_number']; ?>')" class="btn btn-info">Copy Tracking Number</button></td>
-                                                <td><a class="btn btn-secondary" href="view-details.php?num=<?php echo $record['tracking_number']; ?>">View Details</a></td>
-                                                <td><a class="btn btn-warning" href="view-updates.php?num=<?php echo $record['tracking_number']; ?>">View Updates</a></td>
+                                                <td><button type="button" onclick="copyTrackingNumber('<?php echo htmlspecialchars($record['tracking_number']); ?>')" class="btn btn-info">Copy Tracking Number</button></td>
+                                                <td><a class="btn btn-secondary" href="view-details.php?num=<?php echo urlencode($record['tracking_number']); ?>">View Details</a></td>
+                                                <td><a class="btn btn-warning" href="view-updates.php?num=<?php echo urlencode($record['tracking_number']); ?>">View Updates</a></td>
                                             </tr>
-                                            <input type="hidden" name="image" value="<?php echo basename($record['package_image']); ?>">
+                                            <input type="hidden" name="image" value="<?php echo htmlspecialchars(basename($record['package_image'])); ?>">
                                         </form>
                                     <?php endforeach; ?>
                                 <?php else: ?>
@@ -299,7 +264,7 @@ try {
 				<footer class="footer">
           <div class="footer-wrap">
               <div class="w-100 clearfix">
-                <span class="d-block text-center text-sm-left d-sm-inline-block">Copyright ©Transcend Logistics 2025 All rights reserved.</span>
+                <span class="d-block text-center text-sm-left d-sm-inline-block">Copyright © Transcend Logistics 2025 All rights reserved.</span>
                 <span class="float-none float-sm-right d-block mt-1 mt-sm-0 text-center"> <i class="mdi mdi-heart-outline"></i></span>
               </div>
           </div>
@@ -322,14 +287,18 @@ try {
 
 <script>
 function copyTrackingNumber(trackingNumber) {
-    navigator.clipboard.writeText(trackingNumber)
-        .then(() => {
+    navigator.clipboard.writeText(trackingNumber).then(() => {
             alert("Copied the tracking number: " + trackingNumber);
         })
         .catch(err => {
             console.error('Failed to copy: ', err);
+            alert("Failed to copy tracking number.");
         });
 }
 </script>
   </body>
 </html>
+<?php 
+// Flush the output buffer
+ob_end_flush(); 
+?>
