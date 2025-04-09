@@ -166,19 +166,19 @@ try {
                                     <form class="forms-sample">
                                         <div class="form-group">
                                             <label for="exampleInputUsername1">Sender's Name</label>
-                                            <input type="text" class="form-control" name="sname" value="<?php echo $tracking_record['shipper_name'] ?? ''; ?>" id="exampleInputUsername1" readonly>
+                                            <input type="text" class="form-control" name="sname" value="<?php echo $tracking_record['sender_name'] ?? ''; ?>" id="exampleInputUsername1" readonly>
                                         </div>
                                         <div class="form-group">
                                             <label for="exampleInputEmail1">Sender's Contact</label>
-                                            <input type="text" class="form-control" value="<?php echo $tracking_record['shipper_contact'] ?? ''; ?>" name="scontact" id="exampleInputEmail1" readonly>
+                                            <input type="text" class="form-control" value="<?php echo $tracking_record['sender_contact'] ?? ''; ?>" name="scontact" id="exampleInputEmail1" readonly>
                                         </div>
                                         <div class="form-group">
                                             <label for="exampleInputPassword1">Sender's Email</label>
-                                            <input type="text" class="form-control" name="smail" value="<?php echo $tracking_record['shipper_email'] ?? ''; ?>" id="exampleInputPassword1" readonly>
+                                            <input type="text" class="form-control" name="smail" value="<?php echo $tracking_record['sender_email'] ?? ''; ?>" id="exampleInputPassword1" readonly>
                                         </div>
                                         <div class="form-group">
                                             <label for="exampleInputConfirmPassword1">Sender's Address</label>
-                                            <textarea class="form-control" name="saddress" readonly><?php echo $tracking_record['shipper_address'] ?? ''; ?></textarea>
+                                            <textarea class="form-control" name="saddress" readonly><?php echo $tracking_record['sender_address'] ?? ''; ?></textarea>
                                         </div>
                                         <h4 class="card-title">Other Info</h4>
                                         <div class="form-group">
@@ -195,7 +195,7 @@ try {
                                         </div>
                                         <div class="form-group">
                                             <label for="exampleInputPassword1">Carrier reference number</label>
-                                            <input type="text" class="form-control" value="<?php echo $tracking_record['carrier_reference'] ?? ''; ?>" name="carrier_ref" id="exampleInputPassword1" readonly>
+                                            <input type="text" class="form-control" value="<?php echo $tracking_record['carrier_ref_no'] ?? ''; ?>" name="carrier_ref" id="exampleInputPassword1" readonly>
                                         </div>
                                         <div class="form-group">
                                             <label for="exampleInputPassword1">Weight</label>
@@ -204,10 +204,6 @@ try {
                                         <div class="form-group">
                                             <label for="exampleInputPassword1">Payment Mode</label>
                                             <input type="text" class="form-control" value="<?php echo $tracking_record['payment_mode'] ?? ''; ?>" name="payment_mode" id="exampleInputPassword1" readonly>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="exampleInputPassword1">Current Location</label>
-                                            <input type="text" class="form-control" value="<?php echo $tracking_record['current_location'] ?? ''; ?>" name="current_location" id="exampleInputPassword1" readonly>
                                         </div>
                                     </form>
                                 </div>
@@ -242,7 +238,7 @@ try {
                                     </div>
                                     <div class="form-group">
                                         <label for="exampleInputPassword1">Package description</label>
-                                        <input type="text" class="form-control" name="desc" value="<?php echo $tracking_record['package_description'] ?? ''; ?>" id="exampleInputPassword1" readonly>
+                                        <input type="text" class="form-control" name="desc" value="<?php echo $tracking_record['package_desc'] ?? ''; ?>" id="exampleInputPassword1" readonly>
                                     </div>
                                     <div class="form-group">
                                         <label for="exampleInputPassword1">Dispatch Date</label>
@@ -250,7 +246,7 @@ try {
                                     </div>
                                     <div class="form-group">
                                         <label for="exampleInputPassword1">Estimated Delivery Date</label>
-                                        <input type="text" class="form-control" value="<?php echo $tracking_record['estimated_delivery_date'] ?? ''; ?>" name="delivery" id="exampleInputPassword1" readonly>
+                                        <input type="text" class="form-control" value="<?php echo $tracking_record['delivery_date'] ?? ''; ?>" name="delivery" id="exampleInputPassword1" readonly>
                                     </div>
                                     <div class="form-group">
                                         <label for="exampleInputPassword1">Shipment mode</label>

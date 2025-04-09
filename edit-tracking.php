@@ -27,52 +27,27 @@ try {
     
     // Process form submission for updates
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
-        // Collect form data
         $status = $_POST['status'] ?? '';
-        $current_location = $_POST['current_loc'] ?? '';
-        $date = $_POST['date'] ?? date('Y-m-d');
-        $time = $_POST['time'] ?? date('H:i:s');
-        $delivery_charge = $_POST['delivery_charge'] ?? '';
-        $total_charge = $_POST['total_charge'] ?? '';
+        $current_loc = $_POST['current_loc'] ?? '';
         $note = $_POST['note'] ?? '';
         
-        // Update the main tracking record status
+        // Update the tracking record with new status and location
         $update_stmt = $conn->prepare("
-            UPDATE tracking_orders SET 
-                status = :status,
-                current_location = :current_location,
+            UPDATE tracking_orders 
+            SET status = :status, 
+                current_location = :current_loc,
                 updated_at = CURRENT_TIMESTAMP
             WHERE tracking_number = :tracking_number
         ");
         
         $update_stmt->bindParam(':status', $status);
-        $update_stmt->bindParam(':current_location', $current_location);
+        $update_stmt->bindParam(':current_loc', $current_loc);
         $update_stmt->bindParam(':tracking_number', $tracking_number);
         
         if ($update_stmt->execute()) {
-            // Add an entry to tracking_updates table
-            $add_update_stmt = $conn->prepare("
-                INSERT INTO tracking_updates 
-                (tracking_number, update_date, update_time, status, location, delivery_charge, total_charge, notes) 
-                VALUES (:tracking_number, :update_date, :update_time, :status, :location, :delivery_charge, :total_charge, :notes)
-            ");
-            
-            $add_update_stmt->bindParam(':tracking_number', $tracking_number);
-            $add_update_stmt->bindParam(':update_date', $date);
-            $add_update_stmt->bindParam(':update_time', $time);
-            $add_update_stmt->bindParam(':status', $status);
-            $add_update_stmt->bindParam(':location', $current_location);
-            $add_update_stmt->bindParam(':delivery_charge', $delivery_charge);
-            $add_update_stmt->bindParam(':total_charge', $total_charge);
-            $add_update_stmt->bindParam(':notes', $note);
-            
-            if ($add_update_stmt->execute()) {
-                // Redirect to view details with success message
-                header("Location: view-details.php?num=$tracking_number&updated=1");
-                exit();
-            } else {
-                $update_error = "Failed to add tracking update history.";
-            }
+            // Redirect to view details with success message
+            header("Location: view-details.php?num=$tracking_number&updated=1");
+            exit();
         } else {
             $update_error = "Failed to update tracking information.";
         }
