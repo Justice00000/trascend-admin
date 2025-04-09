@@ -1,39 +1,112 @@
 <?php
-// Database configuration for PostgreSQL
-$dsn = "pgsql:host=dpg-cvn925a4d50c73fv6m70-a;port=5432;dbname=admin_db_5jq5;user=admin_db_5jq5_user;password=zQ7Zey6xTtDtqT99fKgUepfsuEhCjIoZ";
+// Database configuration - use environment variables or a secure configuration file
+$dbConfig = [
+    'host' => getenv('DB_HOST') ?: 'dpg-cvn925a4d50c73fv6m70-a',
+    'port' => getenv('DB_PORT') ?: 5432,
+    'dbname' => getenv('DB_NAME') ?: 'admin_db_5jq5',
+    'user' => getenv('DB_USER') ?: 'admin_db_5jq5_user',
+    'password' => getenv('DB_PASSWORD') ?: 'zQ7Zey6xTtDtqT99fKgUepfsuEhCjIoZ'
+];
+
+// Construct DSN more securely
+$dsn = sprintf(
+    "pgsql:host=%s;port=%d;dbname=%s;user=%s;password=%s", 
+    $dbConfig['host'], 
+    $dbConfig['port'], 
+    $dbConfig['dbname'], 
+    $dbConfig['user'], 
+    $dbConfig['password']
+);
 
 try {
-    $conn = new PDO($dsn);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    // Create PDO connection with error mode and persistent connections
+    $conn = new PDO($dsn, null, null, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_PERSISTENT => true,
+        PDO::ATTR_EMULATE_PREPARES => false
+    ]);
     
-    // Fetch all tracking records
-    $stmt = $conn->prepare("SELECT * FROM tracking_orders ORDER BY created_at DESC");
-    $stmt->execute();
-    $tracking_records = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Check if the delete button was clicked
-    if (isset($_POST['delete'])) {
-        $tracking_number = $_POST['tnumb'];
-        $image_file = $_POST['image'];
-
-        // Delete the tracking record
-        $delete_stmt = $conn->prepare("DELETE FROM tracking_orders WHERE tracking_number = :tracking_number");
-        $delete_stmt->bindParam(':tracking_number', $tracking_number);
-        $delete_stmt->execute();
-
-        // Delete the associated image file if it exists
-        if (!empty($image_file) && file_exists($image_file)) {
-            unlink($image_file);
-        }
-
-        // Redirect back to the dashboard with a success parameter
-        header("Location: index.php?deleted=1");
+    // Sanitize and validate tracking number
+    $tracking_number = filter_input(INPUT_GET, 'num', FILTER_SANITIZE_STRING);
+    
+    if (empty($tracking_number)) {
+        header("Location: index.php");
         exit();
     }
+    
+    // Fetch tracking record details with parameterized query
+    $stmt = $conn->prepare("SELECT * FROM tracking_orders WHERE tracking_number = :tracking_number");
+    $stmt->bindParam(':tracking_number', $tracking_number, PDO::PARAM_STR);
+    $stmt->execute();
+    $tracking_record = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$tracking_record) {
+        header("Location: index.php?error=record_not_found");
+        exit();
+    }
+    
+    // Process form submission for updates
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
+        // Sanitize and validate input
+        $status = filter_input(INPUT_POST, 'status', FILTER_SANITIZE_STRING);
+        $dispatch_location = filter_input(INPUT_POST, 'dispatch_location', FILTER_SANITIZE_STRING);
+        $date = filter_input(INPUT_POST, 'date', FILTER_SANITIZE_STRING);
+        $time = filter_input(INPUT_POST, 'time', FILTER_SANITIZE_STRING);
+        $delivery_charge = filter_input(INPUT_POST, 'delivery_charge', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+        $total_charge = filter_input(INPUT_POST, 'total_charge', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+        $note = filter_input(INPUT_POST, 'note', FILTER_SANITIZE_STRING);
+        
+        // Validate required fields
+        if (empty($status) || empty($dispatch_location)) {
+            $update_error = "Status and Current Location are required.";
+        } else {
+            // Prepare update statement with additional fields
+            $update_stmt = $conn->prepare("
+                UPDATE tracking_orders 
+                SET 
+                    status = :status, 
+                    dispatch_location = :dispatch_location,
+                    tracking_date = :tracking_date,
+                    tracking_time = :tracking_time,
+                    delivery_charge = :delivery_charge,
+                    total_charge = :total_charge,
+                    note = :note,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE tracking_number = :tracking_number
+            ");
+            
+            // Bind parameters
+            $update_stmt->bindParam(':status', $status, PDO::PARAM_STR);
+            $update_stmt->bindParam(':dispatch_location', $dispatch_location, PDO::PARAM_STR);
+            $update_stmt->bindParam(':tracking_date', $date, PDO::PARAM_STR);
+            $update_stmt->bindParam(':tracking_time', $time, PDO::PARAM_STR);
+            $update_stmt->bindParam(':delivery_charge', $delivery_charge, PDO::PARAM_STR);
+            $update_stmt->bindParam(':total_charge', $total_charge, PDO::PARAM_STR);
+            $update_stmt->bindParam(':note', $note, PDO::PARAM_STR);
+            $update_stmt->bindParam(':tracking_number', $tracking_number, PDO::PARAM_STR);
+            
+            try {
+                if ($update_stmt->execute()) {
+                    // Redirect to view details with success message
+                    header("Location: view-details.php?num=" . urlencode($tracking_number) . "&updated=1");
+                    exit();
+                } else {
+                    $update_error = "Failed to update tracking information.";
+                }
+            } catch (PDOException $e) {
+                $update_error = "Update Error: " . $e->getMessage();
+                // Log the error securely
+                error_log("Tracking Update Error: " . $e->getMessage());
+            }
+        }
+    }
 } catch (PDOException $e) {
-    $connection_error = "Database Error: " . $e->getMessage();
+    // Log the error securely
+    error_log("Database Connection Error: " . $e->getMessage());
+    $connection_error = "Database Error: Unable to connect. Please try again later.";
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
