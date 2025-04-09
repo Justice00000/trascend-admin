@@ -28,14 +28,14 @@ try {
     // Process form submission for updates
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
         $status = $_POST['status'] ?? '';
-        $current_loc = $_POST['current_loc'] ?? '';
+        $current_loc = $_POST['dispatch_location'] ?? '';
         $note = $_POST['note'] ?? '';
         
         // Update the tracking record with new status and location
         $update_stmt = $conn->prepare("
             UPDATE tracking_orders 
             SET status = :status, 
-                current_location = :current_loc,
+                dispatch_location = :dispatch_location,
                 updated_at = CURRENT_TIMESTAMP
             WHERE tracking_number = :tracking_number
         ");
