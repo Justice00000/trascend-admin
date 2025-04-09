@@ -28,7 +28,7 @@ try {
     // Process form submission for updates
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
         $status = $_POST['status'] ?? '';
-        $current_loc = $_POST['dispatch_location'] ?? '';
+        $dispatch_location = $_POST['dispatch_location'] ?? '';
         $note = $_POST['note'] ?? '';
         
         // Update the tracking record with new status and location
@@ -41,7 +41,7 @@ try {
         ");
         
         $update_stmt->bindParam(':status', $status);
-        $update_stmt->bindParam(':current_loc', $current_loc);
+        $update_stmt->bindParam(':dispatch_location', $dispatch_location);
         $update_stmt->bindParam(':tracking_number', $tracking_number);
         
         if ($update_stmt->execute()) {
@@ -202,7 +202,7 @@ try {
                                         </div>
                                         
                                         <div class="form-group">
-                                            <label for="current_loc">Current Location</label>
+                                            <label for="dispatch_location">Current Location</label>
                                             <input type="text" class="form-control" value="<?php echo $tracking_record['dispatch_location'] ?? ''; ?>" name="dispatch_location" placeholder="Current Location">
                                         </div>
 
