@@ -203,7 +203,7 @@ try {
                                         
                                         <div class="form-group">
                                             <label for="current_loc">Current Location</label>
-                                            <input type="text" class="form-control" value="<?php echo $tracking_record['current_location'] ?? ''; ?>" name="current_loc" placeholder="Current Location">
+                                            <input type="text" class="form-control" value="<?php echo $tracking_record['dispatch_location'] ?? ''; ?>" name="dispatch_location" placeholder="Current Location">
                                         </div>
 
                                         <div class="form-group">
