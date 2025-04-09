@@ -32,18 +32,23 @@ try {
     
     // Process form submission for updates
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
-        // Sanitize input
+        // Sanitize and validate inputs
         $status = filter_input(INPUT_POST, 'status', FILTER_UNSAFE_RAW);
         $status = trim(htmlspecialchars($status, ENT_QUOTES, 'UTF-8'));
         
         $dispatch_location = filter_input(INPUT_POST, 'dispatch_location', FILTER_UNSAFE_RAW);
         $dispatch_location = trim(htmlspecialchars($dispatch_location, ENT_QUOTES, 'UTF-8'));
         
+        // Handle date and time
         $tracking_date = filter_input(INPUT_POST, 'date', FILTER_UNSAFE_RAW);
         $tracking_time = filter_input(INPUT_POST, 'time', FILTER_UNSAFE_RAW);
         
+        // Safely handle numeric inputs
         $delivery_charge = filter_input(INPUT_POST, 'delivery_charge', FILTER_VALIDATE_FLOAT);
+        $delivery_charge = ($delivery_charge === false || is_null($delivery_charge)) ? 0 : $delivery_charge;
+        
         $total_charge = filter_input(INPUT_POST, 'total_charge', FILTER_VALIDATE_FLOAT);
+        $total_charge = ($total_charge === false || is_null($total_charge)) ? 0 : $total_charge;
         
         $note = filter_input(INPUT_POST, 'note', FILTER_UNSAFE_RAW);
         $note = trim(htmlspecialchars($note, ENT_QUOTES, 'UTF-8'));
@@ -95,8 +100,8 @@ try {
             $insert_update_stmt->bindParam(':dispatch_location', $dispatch_location);
             $insert_update_stmt->bindParam(':tracking_date', $tracking_date);
             $insert_update_stmt->bindParam(':tracking_time', $tracking_time);
-            $insert_update_stmt->bindParam(':delivery_charge', $delivery_charge);
-            $insert_update_stmt->bindParam(':total_charge', $total_charge);
+            $insert_update_stmt->bindParam(':delivery_charge', $delivery_charge, PDO::PARAM_STR);
+            $insert_update_stmt->bindParam(':total_charge', $total_charge, PDO::PARAM_STR);
             $insert_update_stmt->bindParam(':note', $note);
             $insert_update_stmt->execute();
             
@@ -136,7 +141,7 @@ try {
   </head>
   <body>
     <div class="container-scroller">
-        <!-- Navigation code remains the same as in the original file -->
+        <!-- Existing navigation code -->
         <div class="container-fluid page-body-wrapper">
             <div class="main-panel">
                 <div class="content-wrapper">
@@ -169,52 +174,81 @@ try {
                                     <form method="post" action="edit-tracking.php?num=<?php echo urlencode($tracking_number); ?>" class="forms-sample">
                                         <div class="form-group">
                                             <label for="status">Status</label>
-                                            <select class="form-control" name="status">
-                                                <option value="Pending" <?php echo ($tracking_record['status'] == 'Pending') ? 'selected' : ''; ?>>Pending</option>
-                                                <option value="Active" <?php echo ($tracking_record['status'] == 'Active') ? 'selected' : ''; ?>>Active</option>
-                                                <option value="Inactive" <?php echo ($tracking_record['status'] == 'Inactive') ? 'selected' : ''; ?>>Inactive</option>
-                                                <option value="Picked Up" <?php echo ($tracking_record['status'] == 'Picked Up') ? 'selected' : ''; ?>>Picked Up</option>
-                                                <option value="On going" <?php echo ($tracking_record['status'] == 'On going') ? 'selected' : ''; ?>>On going</option>
-                                                <option value="Delivered" <?php echo ($tracking_record['status'] == 'Delivered') ? 'selected' : ''; ?>>Delivered</option>
-                                                <option value="Departed" <?php echo ($tracking_record['status'] == 'Departed') ? 'selected' : ''; ?>>Departed</option>
-                                                <option value="On hold" <?php echo ($tracking_record['status'] == 'On hold') ? 'selected' : ''; ?>>On hold</option>
+                                            <select class="form-control" name="status" required>
+                                                <?php 
+                                                $statuses = [
+                                                    'Pending', 'Active', 'Inactive', 
+                                                    'Picked Up', 'On going', 'Delivered', 
+                                                    'Departed', 'On hold'
+                                                ];
+                                                foreach ($statuses as $status): ?>
+                                                    <option value="<?php echo htmlspecialchars($status); ?>" 
+                                                        <?php echo ($tracking_record['status'] == $status) ? 'selected' : ''; ?>>
+                                                        <?php echo htmlspecialchars($status); ?>
+                                                    </option>
+                                                <?php endforeach; ?>
                                             </select>
                                         </div>
                                         
                                         <div class="form-group">
                                             <label for="dispatch_location">Current Location</label>
-                                            <input type="text" class="form-control" value="<?php echo htmlspecialchars($tracking_record['dispatch_location'] ?? ''); ?>" name="dispatch_location" placeholder="Current Location">
+                                            <input type="text" class="form-control" 
+                                                   value="<?php echo htmlspecialchars($tracking_record['dispatch_location'] ?? ''); ?>" 
+                                                   name="dispatch_location" 
+                                                   placeholder="Current Location" 
+                                                   required>
                                         </div>
 
                                         <div class="form-group">
                                             <label for="date">Date</label>
-                                            <input type="date" class="form-control" value="<?php echo date('Y-m-d'); ?>" name="date" placeholder="Date">
+                                            <input type="date" class="form-control" 
+                                                   value="<?php echo date('Y-m-d'); ?>" 
+                                                   name="date" 
+                                                   placeholder="Date" 
+                                                   required>
                                         </div>
 
                                         <div class="form-group">
                                             <label for="time">Time</label>
-                                            <input type="time" class="form-control" value="<?php echo date('H:i'); ?>" name="time">
+                                            <input type="time" class="form-control" 
+                                                   value="<?php echo date('H:i'); ?>" 
+                                                   name="time" 
+                                                   required>
                                         </div>
                                         
                                         <div class="form-group">
                                             <label for="delivery_charge">Delivery Charge</label>
-                                            <input type="number" step="0.01" class="form-control" name="delivery_charge" placeholder="Delivery Charge">
+                                            <input type="number" 
+                                                   step="0.01" 
+                                                   class="form-control" 
+                                                   name="delivery_charge" 
+                                                   placeholder="Delivery Charge"
+                                                   min="0">
                                         </div>
                                         
                                         <div class="form-group">
                                             <label for="total_charge">Total Charge</label>
-                                            <input type="number" step="0.01" class="form-control" name="total_charge" placeholder="Total Charge">
+                                            <input type="number" 
+                                                   step="0.01" 
+                                                   class="form-control" 
+                                                   name="total_charge" 
+                                                   placeholder="Total Charge"
+                                                   min="0">
                                         </div>
                                         
                                         <div class="form-group">
                                             <label for="note">Note</label>
-                                            <textarea name="note" class="form-control" placeholder="Enter update notes or description"></textarea>
+                                            <textarea name="note" 
+                                                      class="form-control" 
+                                                      placeholder="Enter update notes or description"></textarea>
                                         </div>
                                         
                                         <div class="col-12 grid-margin stretch-card">
                                             <div class="card">
                                                 <div class="card-body">
-                                                    <button type="submit" class="btn btn-lg btn-success btn-block" name="update">Update</button>
+                                                    <button type="submit" 
+                                                            class="btn btn-lg btn-success btn-block" 
+                                                            name="update">Update</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -224,8 +258,8 @@ try {
                         </div>
                     </div>
                 </div>
-                <!-- content-wrapper ends -->
-                <!-- partial:partials/_footer.html -->
+                
+                <!-- Footer code -->
                 <footer class="footer">
                   <div class="footer-wrap">
                       <div class="w-100 clearfix">
@@ -234,13 +268,11 @@ try {
                       </div>
                   </div>
                 </footer>
-                <!-- partial -->
             </div>
-            <!-- main-panel ends -->
         </div>
-        <!-- page-body-wrapper ends -->
     </div>
-    <!-- container-scroller -->
+
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js" integrity="sha384-cuYeSxntonz0PPNlHhBs68uyIAVpIIOZZ5JqeqvYYIcEL727kskC66kF92t6Xl2V" crossorigin="anonymous"></script>
     <script src="vendors/base/vendor.bundle.base.js"></script>
     <script src="js/template.js"></script>
@@ -251,3 +283,7 @@ try {
     <script src="js/select2.js"></script>
   </body>
 </html>
+<?php 
+// Flush the output buffer
+ob_end_flush(); 
+?>
