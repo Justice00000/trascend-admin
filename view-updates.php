@@ -25,6 +25,7 @@ $dsn = sprintf(
 $tracking_number = null;
 $update_history = [];
 $connection_error = null;
+$initial_record = null;
 
 try {
     // Create PDO connection
@@ -44,7 +45,7 @@ try {
         exit();
     }
     
-    // Fetch initial tracking record to verify existence
+    // Verify tracking number exists in main tracking_orders table
     $verify_stmt = $conn->prepare("SELECT * FROM tracking_orders WHERE tracking_number = :tracking_number");
     $verify_stmt->bindParam(':tracking_number', $tracking_number, PDO::PARAM_STR);
     $verify_stmt->execute();
@@ -56,7 +57,7 @@ try {
         exit();
     }
     
-    // Fetch update history
+    // Fetch update history from tracking_updates table
     $history_stmt = $conn->prepare("
         SELECT 
             status, 
@@ -66,10 +67,10 @@ try {
             delivery_charge, 
             total_charge, 
             note, 
-            updated_at 
-        FROM tracking_orders 
+            created_at AS updated_at 
+        FROM tracking_updates 
         WHERE tracking_number = :tracking_number 
-        ORDER BY updated_at DESC
+        ORDER BY created_at DESC
     ");
     $history_stmt->bindParam(':tracking_number', $tracking_number, PDO::PARAM_STR);
     $history_stmt->execute();
@@ -131,7 +132,48 @@ try {
   </head>
   <body>
     <div class="container-scroller">
-        <!-- Navigation code remains the same as in previous templates -->
+        <!-- Navigation code begins -->
+        <div class="horizontal-menu">
+          <nav class="navbar top-navbar col-lg-12 col-12 p-0">
+            <div class="container-fluid">
+              <div class="navbar-menu-wrapper d-flex align-items-center justify-content-between">
+                <ul class="navbar-nav navbar-nav-left"></ul>
+                <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-center">
+                  <a class="navbar-brand brand-logo" href="index.php">
+                    <img src="images/logo.png" alt="logo" class="enhanced-logo"/>
+                  </a>
+                  <a class="navbar-brand brand-logo-mini" href="index.php">
+                    <img src="images/logo.png" alt="logo" class="enhanced-logo-mini"/>
+                  </a>
+                </div>
+                <ul class="navbar-nav navbar-nav-right">
+                    <li class="nav-item nav-profile dropdown">
+                      <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" id="profileDropdown">
+                        <span class="nav-profile-name">Admin</span>
+                        <span class="online-status"></span>
+                        <img src="images/face28.png" alt="profile"/>
+                      </a>
+                      <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="profileDropdown">
+                          <a href="settings.php" class="dropdown-item">
+                            <i class="mdi mdi-settings text-primary"></i>
+                            Settings
+                          </a>
+                          <a href="logout.php" class="dropdown-item">
+                            <i class="mdi mdi-logout text-primary"></i>
+                            Logout
+                          </a>
+                      </div>
+                    </li>
+                </ul>
+                <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button" data-toggle="horizontal-menu-toggle">
+                  <span class="mdi mdi-menu"></span>
+                </button>
+              </div>
+            </div>
+          </nav>
+        </div>
+        <!-- Navigation code ends -->
+
         <div class="container-fluid page-body-wrapper">
             <div class="main-panel">
                 <div class="content-wrapper">
@@ -184,12 +226,20 @@ try {
                     </div>
                 </div>
                 
-                <!-- Footer code remains the same as in previous templates -->
+                <!-- Footer -->
+                <footer class="footer">
+                  <div class="footer-wrap">
+                      <div class="w-100 clearfix">
+                        <span class="d-block text-center text-sm-left d-sm-inline-block">Copyright © Transcend Logistics 2025 All rights reserved.</span>
+                        <span class="float-none float-sm-right d-block mt-1 mt-sm-0 text-center"> <i class="mdi mdi-heart-outline"></i></span>
+                      </div>
+                  </div>
+                </footer>
             </div>
         </div>
     </div>
 
-    <!-- Scripts remain the same as in previous templates -->
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js" integrity="sha384-cuYeSxntonz0PPNlHhBs68uyIAVpIIOZZ5JqeqvYYIcEL727kskC66kF92t6Xl2V" crossorigin="anonymous"></script>
     <script src="vendors/base/vendor.bundle.base.js"></script>
     <script src="js/template.js"></script>
