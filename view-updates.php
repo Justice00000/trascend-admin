@@ -148,7 +148,7 @@ try {
                 </div>
                 <ul class="navbar-nav navbar-nav-right">
                     <li class="nav-item nav-profile dropdown">
-                      <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" id="profileDropdown">
+                      <a class="nav-link dropdown-toggle" href="index.php" data-toggle="dropdown" id="profileDropdown">
                         <span class="nav-profile-name">Admin</span>
                         <span class="online-status"></span>
                         <img src="images/face28.png" alt="profile"/>
